@@ -1,4 +1,4 @@
-import React, { Component} from 'react';
+import React, { Component } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -45,7 +45,7 @@ export default class App extends Component {
           style={{ paddingTop: 35 }}
           renderSectionHeader={() => {
             return (
-              <View style={{ flex:1, alignItems: 'center'}}>
+              <View style={{ flex:1, alignItems: 'center' }}>
                 <Image source={ require('./assets/coda-logo.png') } style={{ width: 158, height: 70 }} />
               </View>
             );
@@ -154,7 +154,7 @@ export default class App extends Component {
   _takePhoto = async () => {
     let pickerResult = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [1, 1]
     });
 
     this._handleImagePicked(pickerResult);
@@ -163,7 +163,7 @@ export default class App extends Component {
   _pickImage = async () => {
     let pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [1, 1]
     });
 
     this._handleImagePicked(pickerResult);
