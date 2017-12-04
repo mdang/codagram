@@ -11,7 +11,7 @@ import {
   View,
   TouchableHighlight
 } from 'react-native';
-import { ImagePicker } from 'expo';
+import { ImagePicker, AppLoading } from 'expo';
 import * as constants from './constants';
 
 export default class App extends Component {
@@ -21,9 +21,12 @@ export default class App extends Component {
     this.state = {
       posts: [],
       image: null,
+      isReady: false,
       refreshing: false,
       uploading: false
     };
+
+    this._loadPosts = this._loadPosts.bind(this);
   }
 
   componentDidMount() {
@@ -69,6 +72,15 @@ export default class App extends Component {
   }
 
   render() {
+    if (!this.state.isReady) {
+      return (
+        <AppLoading
+          startAsync={ this._loadPosts }
+          onFinish={() => this.setState({ isReady: true })}
+          onError={ console.warn } />
+      );
+    }
+
     return (
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <SectionList
@@ -92,7 +104,7 @@ export default class App extends Component {
           refreshControl={
             <RefreshControl
               refreshing={ this.state.refreshing }
-              onRefresh={ this._loadPosts.bind(this) } />
+              onRefresh={ this._loadPosts } />
           }
           renderItem={({item}) => {
             if (!item) return <Text>No posts</Text>;
@@ -104,7 +116,6 @@ export default class App extends Component {
                               marginTop: 4 }} />
           }}
         />
-        
         <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', position: 'absolute', bottom: 70, right: 15 }}>
           <TouchableHighlight
             underlayColor="transparent"
@@ -119,14 +130,14 @@ export default class App extends Component {
           </TouchableHighlight>
         </View>
 
-        {this._maybeRenderUploadingOverlay()}
+        {this._renderUploadingOverlay()}
 
         <StatusBar barStyle="default" />
       </View>
     );
   }
 
-  _maybeRenderUploadingOverlay = () => {
+  _renderUploadingOverlay = () => {
     if (this.state.uploading) {
       return (
         <View
@@ -176,7 +187,7 @@ export default class App extends Component {
       }
     } catch (e) {
       console.log({ uploadResponse }, { uploadResult }, { e });
-      alert('Upload failed, sorry :(');
+      alert('Upload failed');
     } finally {
       this.setState({ uploading: false });
     }
