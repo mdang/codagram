@@ -12,16 +12,17 @@ import {
   TouchableHighlight
 } from 'react-native';
 import { ImagePicker } from 'expo';
+import * as constants from './constants';
 
 export default class App extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
+      posts: [],
       image: null,
       refreshing: false,
-      posts: [],
-      uploading: false,
+      uploading: false
     };
   }
 
@@ -30,7 +31,7 @@ export default class App extends Component {
   }
 
   async uploadImageAsync(uri) {
-    let apiUrl = 'https://codagram.herokuapp.com/api/posts';
+    let apiUrl = `${ constants.API_BASE_URL }/posts`;
     let fileType = uri[uri.length - 1];
 
     let formData = new FormData();
@@ -53,8 +54,9 @@ export default class App extends Component {
   }
 
   _loadPosts() {
-    this.setState({refreshing: true});
-    fetch('https://codagram.herokuapp.com/api/posts')
+    this.setState({ refreshing: true });
+
+    fetch(`${ constants.API_BASE_URL }/posts`)
       .then(response => response.json())
       .then(posts => {
         this.setState({
@@ -62,7 +64,7 @@ export default class App extends Component {
           refreshing: false
         })
       }).catch(e => {
-        console.log('Error fetching results', e);
+        console.error('Error fetching results', e);
       })
   }
 
@@ -70,47 +72,48 @@ export default class App extends Component {
     return (
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <SectionList
-          style={ {paddingTop: 35} }
+          style={{ paddingTop: 35 }}
           renderSectionHeader={() => {
             return (
               <View style={{ flex:1, alignItems: 'center'}}>
-                  <Image source={require('./assets/coda-logo.png')} style={{ width: 158, height: 70 }} />
-                </View>
+                <Image source={ require('./assets/coda-logo.png') } style={{ width: 158, height: 70 }} />
+              </View>
             );
           }}
           renderSectionFooter={() => {
             return (
-              <View style={{ flex:1, alignItems: 'center', paddingTop: 35}}></View>
+              <View style={{ flex:1, alignItems: 'center', paddingTop: 35 }}></View>
             );
           }}
           sections={[
-            {data: this.state.posts, key: 'main'}
+            { data: this.state.posts, key: 'posts' }
           ]}
-          data={this.state.posts}
+          data={ this.state.posts }
           refreshControl={
             <RefreshControl
-              refreshing={this.state.refreshing}
-              onRefresh={this._loadPosts.bind(this)}
-            />
+              refreshing={ this.state.refreshing }
+              onRefresh={ this._loadPosts.bind(this) } />
           }
           renderItem={({item}) => {
-            if (!item) {
-              return <Text>No results!</Text>;
-            }
+            if (!item) return <Text>No posts</Text>;
 
             return <Image
                     source={{ uri: item.location }}
-                      style={{width: Dimensions.get('window').width, height: Dimensions.get('window').width, marginTop: 4}} />
+                    style={{ width: Dimensions.get('window').width,
+                              height: Dimensions.get('window').width,
+                              marginTop: 4 }} />
           }}
         />
+        
         <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', position: 'absolute', bottom: 70, right: 15 }}>
           <TouchableHighlight
             underlayColor="transparent"
             onPress={ this._takePhoto  }>
-            <Image source={ require('./assets/camera.png' )} style={{ width: 50, height: 50, marginTop: 15 }} />
+            <Image source={ require('./assets/camera.png') } style={{ width: 50, height: 50, marginTop: 15 }} />
           </TouchableHighlight>
 
-          <TouchableHighlight underlayColor="transparent"
+          <TouchableHighlight
+            underlayColor="transparent"
             onPress={ this._pickImage  }>
             <Image source={ require('./assets/photos.png' )} style={{ width: 50, height: 50, marginTop: 15 }} />
           </TouchableHighlight>
@@ -135,7 +138,7 @@ export default class App extends Component {
               justifyContent: 'center',
             },
           ]}>
-          <ActivityIndicator color="#000" animating size="large" />
+          <ActivityIndicator color="#fff" animating size="large" />
         </View>
       );
     }
@@ -172,9 +175,7 @@ export default class App extends Component {
         this._loadPosts();
       }
     } catch (e) {
-      console.log({ uploadResponse });
-      console.log({ uploadResult });
-      console.log({ e });
+      console.log({ uploadResponse }, { uploadResult }, { e });
       alert('Upload failed, sorry :(');
     } finally {
       this.setState({ uploading: false });
