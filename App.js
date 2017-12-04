@@ -1,45 +1,121 @@
-import React from 'react';
+import React, { Component} from 'react';
 import {
   ActivityIndicator,
-  Button,
-  Clipboard,
   Image,
-  Share,
   StatusBar,
   StyleSheet,
   Text,
+  RefreshControl,
+  Dimensions,
+  SectionList,
   View,
+  TouchableHighlight
 } from 'react-native';
 import { ImagePicker } from 'expo';
 
-export default class App extends React.Component {
-  state = {
-    image: null,
-    uploading: false,
-  };
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      image: null,
+      refreshing: false,
+      posts: [],
+      uploading: false,
+    };
+  }
+
+  componentDidMount() {
+    this._loadPosts();
+  }
+
+  async uploadImageAsync(uri) {
+    let apiUrl = 'https://codagram.herokuapp.com/api/posts';
+    let fileType = uri[uri.length - 1];
+
+    let formData = new FormData();
+    formData.append('photo', {
+      uri,
+      name: `photo.${fileType}`,
+      type: `image/${fileType}`,
+    });
+
+    let options = {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data',
+      }
+    };
+
+    return fetch(apiUrl, options);
+  }
+
+  _loadPosts() {
+    this.setState({refreshing: true});
+    fetch('https://codagram.herokuapp.com/api/posts')
+      .then(response => response.json())
+      .then(posts => {
+        this.setState({
+          posts: posts,
+          refreshing: false
+        })
+      }).catch(e => {
+        console.log('Error fetching results', e);
+      })
+  }
 
   render() {
-
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text
-          style={{
-            fontSize: 20,
-            marginBottom: 20,
-            textAlign: 'center',
-            marginHorizontal: 15,
-          }}>
-          Example: Upload ImagePicker result
-        </Text>
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SectionList
+          style={ {paddingTop: 35} }
+          renderSectionHeader={() => {
+            return (
+              <View style={{ flex:1, alignItems: 'center'}}>
+                  <Image source={require('./assets/coda-logo.png')} style={{ width: 158, height: 70 }} />
+                </View>
+            );
+          }}
+          renderSectionFooter={() => {
+            return (
+              <View style={{ flex:1, alignItems: 'center', paddingTop: 35}}></View>
+            );
+          }}
+          sections={[
+            {data: this.state.posts, key: 'main'}
+          ]}
+          data={this.state.posts}
+          refreshControl={
+            <RefreshControl
+              refreshing={this.state.refreshing}
+              onRefresh={this._loadPosts.bind(this)}
+            />
+          }
+          renderItem={({item}) => {
+            if (!item) {
+              return <Text>No results!</Text>;
+            }
 
-        <Button
-          onPress={this._pickImage}
-          title="Pick an image from camera roll"
+            return <Image
+                    source={{ uri: item.location }}
+                      style={{width: Dimensions.get('window').width, height: Dimensions.get('window').width, marginTop: 4}} />
+          }}
         />
+        <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', position: 'absolute', bottom: 70, right: 15 }}>
+          <TouchableHighlight
+            underlayColor="transparent"
+            onPress={ this._takePhoto  }>
+            <Image source={ require('./assets/camera.png' )} style={{ width: 50, height: 50, marginTop: 15 }} />
+          </TouchableHighlight>
 
-        <Button onPress={this._takePhoto} title="Take a photo" />
+          <TouchableHighlight underlayColor="transparent"
+            onPress={ this._pickImage  }>
+            <Image source={ require('./assets/photos.png' )} style={{ width: 50, height: 50, marginTop: 15 }} />
+          </TouchableHighlight>
+        </View>
 
-        {this._maybeRenderImage()}
         {this._maybeRenderUploadingOverlay()}
 
         <StatusBar barStyle="default" />
@@ -59,66 +135,16 @@ export default class App extends React.Component {
               justifyContent: 'center',
             },
           ]}>
-          <ActivityIndicator color="#fff" animating size="large" />
+          <ActivityIndicator color="#000" animating size="large" />
         </View>
       );
     }
   };
 
-  _maybeRenderImage = () => {
-    let { image } = this.state;
-    if (!image) {
-      return;
-    }
-
-    return (
-      <View
-        style={{
-          marginTop: 30,
-          width: 250,
-          borderRadius: 3,
-          elevation: 2,
-          shadowColor: 'rgba(0,0,0,1)',
-          shadowOpacity: 0.2,
-          shadowOffset: { width: 4, height: 4 },
-          shadowRadius: 5,
-        }}>
-        <View
-          style={{
-            borderTopRightRadius: 3,
-            borderTopLeftRadius: 3,
-            overflow: 'hidden',
-          }}>
-          <Image source={{ uri: image }} style={{ width: 250, height: 250 }} />
-        </View>
-
-        <Text
-          onPress={this._copyToClipboard}
-          onLongPress={this._share}
-          style={{ paddingVertical: 10, paddingHorizontal: 10 }}>
-          {image}
-        </Text>
-      </View>
-    );
-  };
-
-  _share = () => {
-    Share.share({
-      message: this.state.image,
-      title: 'Check out this photo',
-      url: this.state.image,
-    });
-  };
-
-  _copyToClipboard = () => {
-    Clipboard.setString(this.state.image);
-    alert('Copied image URL to clipboard');
-  };
-
   _takePhoto = async () => {
     let pickerResult = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [1, 1],
     });
 
     this._handleImagePicked(pickerResult);
@@ -127,7 +153,7 @@ export default class App extends React.Component {
   _pickImage = async () => {
     let pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [1, 1],
     });
 
     this._handleImagePicked(pickerResult);
@@ -140,9 +166,10 @@ export default class App extends React.Component {
       this.setState({ uploading: true });
 
       if (!pickerResult.cancelled) {
-        uploadResponse = await uploadImageAsync(pickerResult.uri);
+        uploadResponse = await this.uploadImageAsync(pickerResult.uri);
         uploadResult = await uploadResponse.json();
         this.setState({ image: uploadResult.location });
+        this._loadPosts();
       }
     } catch (e) {
       console.log({ uploadResponse });
@@ -153,37 +180,4 @@ export default class App extends React.Component {
       this.setState({ uploading: false });
     }
   };
-}
-
-async function uploadImageAsync(uri) {
-  let apiUrl = 'https://codagram.herokuapp.com/api/posts';
-
-  // Note:
-  // Uncomment this if you want to experiment with local server
-  //
-  // if (Constants.isDevice) {
-  //   apiUrl = `https://your-ngrok-subdomain.ngrok.io/upload`;
-  // } else {
-  //   apiUrl = `http://localhost:3000/upload`
-  // }
-
-  let fileType = uri[uri.length - 1];
-
-  let formData = new FormData();
-  formData.append('photo', {
-    uri,
-    name: `photo.${fileType}`,
-    type: `image/${fileType}`,
-  });
-
-  let options = {
-    method: 'POST',
-    body: formData,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'multipart/form-data',
-    },
-  };
-
-  return fetch(apiUrl, options);
 }
