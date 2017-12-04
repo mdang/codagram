@@ -29,48 +29,6 @@ export default class App extends Component {
     this._loadPosts = this._loadPosts.bind(this);
   }
 
-  componentDidMount() {
-    this._loadPosts();
-  }
-
-  async uploadImageAsync(uri) {
-    let apiUrl = `${ constants.API_BASE_URL }/posts`;
-    let fileType = uri[uri.length - 1];
-
-    let formData = new FormData();
-    formData.append('photo', {
-      uri,
-      name: `photo.${fileType}`,
-      type: `image/${fileType}`,
-    });
-
-    let options = {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data',
-      }
-    };
-
-    return fetch(apiUrl, options);
-  }
-
-  _loadPosts() {
-    this.setState({ refreshing: true });
-
-    fetch(`${ constants.API_BASE_URL }/posts`)
-      .then(response => response.json())
-      .then(posts => {
-        this.setState({
-          posts: posts,
-          refreshing: false
-        })
-      }).catch(e => {
-        console.error('Error fetching results', e);
-      })
-  }
-
   render() {
     if (!this.state.isReady) {
       return (
@@ -82,7 +40,7 @@ export default class App extends Component {
     }
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={ styles.container }>
         <SectionList
           style={{ paddingTop: 35 }}
           renderSectionHeader={() => {
@@ -110,10 +68,10 @@ export default class App extends Component {
             if (!item) return <Text>No posts</Text>;
 
             return <Image
-                    source={{ uri: item.location }}
-                    style={{ width: Dimensions.get('window').width,
-                              height: Dimensions.get('window').width,
-                              marginTop: 4 }} />
+                      source={{ uri: item.location }}
+                      style={{ width: Dimensions.get('window').width,
+                                height: Dimensions.get('window').width,
+                                marginTop: 4 }} />
           }}
         />
         <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', position: 'absolute', bottom: 70, right: 15 }}>
@@ -130,14 +88,52 @@ export default class App extends Component {
           </TouchableHighlight>
         </View>
 
-        {this._renderUploadingOverlay()}
+        { this._renderUploadingOverlay() }
 
         <StatusBar barStyle="default" />
       </View>
     );
   }
 
-  _renderUploadingOverlay = () => {
+  async uploadImageAsync(uri) {
+    const endpoint = `${ constants.API_BASE_URL }/posts`;
+    const fileType = uri[uri.length - 1];
+
+    const formData = new FormData();
+    formData.append('photo', {
+      uri,
+      name: `photo.${fileType}`,
+      type: `image/${fileType}`,
+    });
+
+    const options = {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data',
+      }
+    };
+
+    return fetch(endpoint, options);
+  }
+
+  _loadPosts() {
+    this.setState({ refreshing: true });
+
+    fetch(`${ constants.API_BASE_URL }/posts`)
+      .then(response => response.json())
+      .then(posts => {
+        this.setState({
+          posts: posts,
+          refreshing: false
+        })
+      }).catch(e => {
+        console.error('Error fetching results', e);
+      });
+  }
+
+  _renderUploadingOverlay() {
     if (this.state.uploading) {
       return (
         <View
@@ -153,7 +149,7 @@ export default class App extends Component {
         </View>
       );
     }
-  };
+  }
 
   _takePhoto = async () => {
     let pickerResult = await ImagePicker.launchCameraAsync({
@@ -162,7 +158,7 @@ export default class App extends Component {
     });
 
     this._handleImagePicked(pickerResult);
-  };
+  }
 
   _pickImage = async () => {
     let pickerResult = await ImagePicker.launchImageLibraryAsync({
@@ -171,7 +167,7 @@ export default class App extends Component {
     });
 
     this._handleImagePicked(pickerResult);
-  };
+  }
 
   _handleImagePicked = async pickerResult => {
     let uploadResponse, uploadResult;
@@ -182,6 +178,7 @@ export default class App extends Component {
       if (!pickerResult.cancelled) {
         uploadResponse = await this.uploadImageAsync(pickerResult.uri);
         uploadResult = await uploadResponse.json();
+
         this.setState({ image: uploadResult.location });
         this._loadPosts();
       }
@@ -191,5 +188,12 @@ export default class App extends Component {
     } finally {
       this.setState({ uploading: false });
     }
-  };
+  }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  }
+});
