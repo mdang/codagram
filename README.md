@@ -15,4 +15,4 @@ React Native implementation of an Instagram clone.
 
 ## Screenshot
 
-![Screenshot](./assets/screenshot.png)
+<img src="./assets/screenshot.png" width="350" alt="screenshot" />
